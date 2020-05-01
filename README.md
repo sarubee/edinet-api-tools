@@ -4,7 +4,8 @@ EDINET API 活用のための Python ツールのレポジトリです（非公�
 EDINET API については、[EDINET 操作ガイド](https://disclosure.edinet-fsa.go.jp/EKW0EZ0015.html) の "EDINET API関連資料" に仕様等の説明があります。
 
 ---
-## Requirement (動作確認環境)
+## Requirement
+※（）内の version は動作確認環境です。
 * Python (3.7.5)  
 
 Python の標準ライブラリに含まれない以下のライブラリ（およびそれらの依存ライブラリ）に依存しています。  
@@ -21,6 +22,7 @@ Apache License 2.0
 ---
 ## Description
 ### edinet_api_fetch.py
+EDINET API からデータを取得します。
 #### ツールとして直接実行
 * 使い方
 ```
