@@ -338,8 +338,7 @@ if __name__ == "__main__":
     parser.add_argument("--overwrite", help="overwrite existing data", action="store_true", default=False)
     args = parser.parse_args()
     logging.basicConfig(
-        #level = logging.INFO,
-        level = logging.DEBUG,
+        level = logging.INFO,
         format = "[%(asctime)s][%(levelname)s] %(message)s",
     )
 
