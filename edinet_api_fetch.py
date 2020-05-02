@@ -20,7 +20,7 @@ edinet_api_fetch.py
 - script to fetch data via EDINET API
 """
 
-import argparse 
+import argparse
 import requests
 import time
 from urllib.parse import urljoin
@@ -30,7 +30,7 @@ from dateutil.relativedelta import relativedelta
 import logging
 logger = logging.getLogger(__name__)
 import json
-import os 
+import os
 
 class EdinetFetchError(RuntimeError):
     pass
@@ -41,16 +41,16 @@ class EdinetAPIFetcher:
     URL_DOC_LIST = URL_API + "documents.json"
     URL_DOC = URL_API + "documents/"
     # 文書 type
-    DOC_TYPE_MAIN = 1 
-    DOC_TYPE_PDF = 2 
+    DOC_TYPE_MAIN = 1
+    DOC_TYPE_PDF = 2
     DOC_TYPE_ADDITIONAL = 3
-    DOC_TYPE_ENG = 4 
+    DOC_TYPE_ENG = 4
     DOC_TYPE_LIST_FULL = [1, 2, 3, 4]
 
     def __init__(self, retry_interval=-1):
         # 取得エラー時の retry 間隔 [sec]
         # 負数なら retry しない
-        self.retry_interval = retry_interval 
+        self.retry_interval = retry_interval
 
     @staticmethod
     def _doc_ext(doc_type):
@@ -58,7 +58,7 @@ class EdinetAPIFetcher:
 
         Parameters
         ----------
-        doc_type : int 
+        doc_type : int
             取得する文書 type
         Returns
         -------
@@ -94,7 +94,7 @@ class EdinetAPIFetcher:
         # status チェック (あまり意味ないかも)
         r.raise_for_status()
 
-        return r 
+        return r
 
     def _fetcher_err_handling_common(self, r):
         # fetch 失敗時の共通処理
@@ -137,9 +137,9 @@ class EdinetAPIFetcher:
 
         Parameters
         ----------
-        doc_id : str 
+        doc_id : str
             取得する文書コード
-        doc_type : int 
+        doc_type : int
             取得する文書 type
 
         Returns
@@ -150,14 +150,14 @@ class EdinetAPIFetcher:
         params =  {"type" : doc_type}
         headers = {}
 
-        url = urljoin(EdinetAPIFetcher.URL_DOC, doc_id)   
+        url = urljoin(EdinetAPIFetcher.URL_DOC, doc_id)
         err_msg_base = f"Failed to fetch a document!! (doc_id: {doc_id}, doc_type: {doc_type})"
         while True:
             logger.info(f"fetching document (doc_id: {doc_id}, type: {doc_type})...")
             r = EdinetAPIFetcher._fetch(url, params, headers)
             ctype = r.headers["Content-Type"]
             ctype.strip()
-            if (doc_type == EdinetAPIFetcher.DOC_TYPE_PDF and ctype == "application/pdf") or (doc_type != EdinetAPIFetcher.DOC_TYPE_PDF and ctype == "application/octet-stream"): 
+            if (doc_type == EdinetAPIFetcher.DOC_TYPE_PDF and ctype == "application/pdf") or (doc_type != EdinetAPIFetcher.DOC_TYPE_PDF and ctype == "application/octet-stream"):
                 # 取得成功
                 return r
             # エラー時の処理
@@ -166,14 +166,14 @@ class EdinetAPIFetcher:
             if e["handling"] == "error":
                 raise EdinetFetchError(err_msg)
             elif e["handling"] == "skip":
-                # warning を出してスルー 
+                # warning を出してスルー
                 logger.warning(err_msg)
                 logger.warning("Skip...")
                 return None
             elif e["handling"] == "retry":
                 logger.warning(err_msg)
                 logger.warning(f"Wait for retry ({self.retry_interval}sec) ...")
-                time.sleep(self.retry_interval) 
+                time.sleep(self.retry_interval)
                 continue
 
     def fetch_doc_list_for_day(self, day, only_meta=False):
@@ -183,7 +183,7 @@ class EdinetAPIFetcher:
         ----------
         day : str (isoformat) or datetime.date
             日付 (YYYY-MM-DD)
-        only_meta : bool 
+        only_meta : bool
             True:  メタデータのみ
             False: 提出書類一覧及びメタデータ
 
@@ -192,7 +192,7 @@ class EdinetAPIFetcher:
         dict or None(Not Found 時)
             取得したデータ
         """
-        target_type = 1 if only_meta else 2 
+        target_type = 1 if only_meta else 2
 
         params =  {"date" : str(day), "type" : target_type}
         headers = {}
@@ -203,7 +203,7 @@ class EdinetAPIFetcher:
             r = EdinetAPIFetcher._fetch(EdinetAPIFetcher.URL_DOC_LIST, params, headers)
             ctype = r.headers["Content-Type"]
             ctype.strip()
-            if ctype == "application/json;charset=utf-8": 
+            if ctype == "application/json;charset=utf-8":
                 j = r.json()
                 meta = j["metadata"]
                 status = int(meta["status"])
@@ -217,14 +217,14 @@ class EdinetAPIFetcher:
             if e["handling"] == "error":
                 raise EdinetFetchError(err_msg)
             elif e["handling"] == "skip":
-                # warning を出してスルー 
+                # warning を出してスルー
                 logger.warning(err_msg)
                 logger.warning("Skip...")
                 return None
             elif e["handling"] == "retry":
                 logger.warning(err_msg)
                 logger.warning(f"Wait for retry ({self.retry_interval}sec) ...")
-                time.sleep(self.retry_interval) 
+                time.sleep(self.retry_interval)
                 continue
 
     def save_docs_for_id(self, outdir, doc_id, *, doc_types=None, overwrite=False):
@@ -232,13 +232,13 @@ class EdinetAPIFetcher:
 
         Parameters
         ----------
-        doc_id : str 
+        doc_id : str
             取得する文書コード
         outdir : Path or str
-            出力ディレクトリパス 
-        doc_types : list 
+            出力ディレクトリパス
+        doc_types : list
             取得する文書 type
-        overwrite : bool 
+        overwrite : bool
             ファイルが存在する場合に上書きするか
 
         Returns
@@ -247,7 +247,7 @@ class EdinetAPIFetcher:
         outdir = Path(outdir)
         if doc_types is None:
             # デフォルトは main データだけ
-            doc_types = [EdinetAPIFetcher.DOC_TYPE_MAIN] 
+            doc_types = [EdinetAPIFetcher.DOC_TYPE_MAIN]
 
         os.makedirs(outdir, exist_ok=True)
         for doc_type in doc_types:
@@ -267,13 +267,13 @@ class EdinetAPIFetcher:
 
         Parameters
         ----------
-        day : str or datetime.date 
+        day : str or datetime.date
             日付 (YYYY-MM-DD)
         outdir : Path or str
-            出力ディレクトリパス 
-        doc_types : list 
+            出力ディレクトリパス
+        doc_types : list
             取得する文書 type
-        overwrite : bool 
+        overwrite : bool
             ファイルが存在する場合に上書きするか
 
         Returns
@@ -284,7 +284,7 @@ class EdinetAPIFetcher:
         if not overwrite and doc_list_path.exists():
             logger.info(f"File exists ({doc_list_path}). Loading existing file....")
             with open(doc_list_path, "r") as f:
-                j = json.load(f) 
+                j = json.load(f)
         else:
             j = api.fetch_doc_list_for_day(day)
             if j is None:
@@ -308,9 +308,9 @@ class EdinetAPIFetcher:
             取得開始日
         end_day : str (isoformat) or datetime.date
             取得終了日
-        doc_types : list 
+        doc_types : list
             取得する文書 type
-        overwrite : bool 
+        overwrite : bool
             ファイルが存在する場合に上書きするか
 
         Returns
@@ -328,7 +328,7 @@ class EdinetAPIFetcher:
             day += relativedelta(days=1)
 
 
-# 直接実行時 
+# 直接実行時
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--from", metavar="YYYY-MM-DD", help="start daty", required=True, dest="start_day")
@@ -342,7 +342,7 @@ if __name__ == "__main__":
         format = "[%(asctime)s][%(levelname)s] %(message)s",
     )
 
-    start_day = date.fromisoformat(args.start_day) 
+    start_day = date.fromisoformat(args.start_day)
     end_day = date.fromisoformat(args.end_day)
     if args.full:
         doc_types = EdinetAPIFetcher.DOC_TYPE_LIST_FULL
