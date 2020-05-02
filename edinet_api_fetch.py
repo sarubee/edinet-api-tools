@@ -96,6 +96,42 @@ class EdinetAPIFetcher:
 
         return r 
 
+    def _fetcher_err_handling_common(self, r):
+        # fetch 失敗時の共通処理
+        ctype = r.headers["Content-Type"]
+        ctype.strip()
+        if ctype == "application/json;charset=utf-8":
+            meta = r.json()["metadata"]
+            status = int(meta["status"])
+            msg = f"{meta['message']}({status})"
+            if status == 400:
+                # Bad Request
+                # リクエスト側の問題なのでエラーにしておく
+                return {"handling" : "error", "message" : msg}
+            elif status == 404:
+                # Not Found
+                # Skip する
+                return {"handling" : "skip", "message" : msg}
+            else:
+                # あとは status=500 (Internal Server Error) ？
+                # retry 設定があれば retry
+                if self.retry_interval < 0:
+                    return {"handling" : "error", "message" : msg}
+                else:
+                    return {"handling" : "retry", "message" : msg}
+        elif ctype == "text/html":
+            # sorry 画面っぽいやつが出る場合がある
+            # retry 設定があれば retry
+            msg = f"Invalid content type ({ctype})"
+            if self.retry_interval < 0:
+                return {"handling" : "error", "message" : msg}
+            else:
+                return {"handling" : "retry", "message" : msg}
+        else:
+            # ありうる？とりあえずエラーにしておく
+            msg = f"Unexpected content type ({ctype})!!"
+            return {"handling" : "error", "message" : msg}
+
     def _fetch_doc_one(self, doc_id, doc_type):
         """文書コード、type を指定して取得する関数
 
@@ -115,35 +151,30 @@ class EdinetAPIFetcher:
         headers = {}
 
         url = urljoin(EdinetAPIFetcher.URL_DOC, doc_id)   
+        err_msg_base = f"Failed to fetch a document!! (doc_id: {doc_id}, doc_type: {doc_type})"
         while True:
             logger.info(f"fetching document (doc_id: {doc_id}, type: {doc_type})...")
             r = EdinetAPIFetcher._fetch(url, params, headers)
-            if r.headers["Content-Type"] != "application/json;charset=utf-8": 
+            ctype = r.headers["Content-Type"]
+            ctype.strip()
+            if (doc_type == EdinetAPIFetcher.DOC_TYPE_PDF and ctype == "application/pdf") or (doc_type != EdinetAPIFetcher.DOC_TYPE_PDF and ctype == "application/octet-stream"): 
                 # 取得成功
                 return r
-            # 失敗時
-            meta = r.json()["metadata"]
-            status = int(meta["status"])
-            msg = meta["message"]
-            err_msg = f"Failed to fetch a document!! (doc_id: {doc_id}, doc_type: {doc_type}): {msg}({status})"
-            if status == 400:
-                # Bad Request
-                # リクエスト側の問題なのでエラーにしておく
+            # エラー時の処理
+            e = self._fetcher_err_handling_common(r)
+            err_msg = err_msg_base + f": {e['message']}"
+            if e["handling"] == "error":
                 raise EdinetFetchError(err_msg)
-            elif status == 404:
-                # Not Found 
+            elif e["handling"] == "skip":
                 # warning を出してスルー 
                 logger.warning(err_msg)
                 logger.warning("Skip...")
                 return None
-            # ここまでくるのは status=500 (Internal Server Error) ？
-            if self.retry_interval < 0:
-                raise EdinetFetchError(err_msg)
-            else:
-                # 指定時間待機して retry
+            elif e["handling"] == "retry":
                 logger.warning(err_msg)
                 logger.warning(f"Wait for retry ({self.retry_interval}sec) ...")
                 time.sleep(self.retry_interval) 
+                continue
 
     def fetch_doc_list_for_day(self, day, only_meta=False):
         """指定日の書類一覧を取得する関数
@@ -166,35 +197,35 @@ class EdinetAPIFetcher:
         params =  {"date" : str(day), "type" : target_type}
         headers = {}
 
+        err_msg_base = f"Failed to fetch document list!! (day: {day})"
         while True:
             logger.info(f"fetching document list (date: {day}, type: {target_type})...")
             r = EdinetAPIFetcher._fetch(EdinetAPIFetcher.URL_DOC_LIST, params, headers)
-            j = r.json()
-            meta = j["metadata"]
-            status = int(meta["status"])
-            msg = meta["message"]
-            err_msg = f"Failed to fetch document list!! (day: {day}): {msg}({status})"
-            if status == 200:
-                # 取得成功
-                return j
-            elif status == 400:
-                # Bad Request
-                # リクエスト側の問題なのでエラーにしておく
+            ctype = r.headers["Content-Type"]
+            ctype.strip()
+            if ctype == "application/json;charset=utf-8": 
+                j = r.json()
+                meta = j["metadata"]
+                status = int(meta["status"])
+                msg = meta["message"]
+                if status == 200:
+                    # 取得成功
+                    return j
+            # エラー時の処理
+            e = self._fetcher_err_handling_common(r)
+            err_msg = err_msg_base + f": {e['message']}"
+            if e["handling"] == "error":
                 raise EdinetFetchError(err_msg)
-            elif status == 404:
-                # Not Found 
+            elif e["handling"] == "skip":
                 # warning を出してスルー 
                 logger.warning(err_msg)
                 logger.warning("Skip...")
                 return None
-            # ここまでくるのは status=500 (Internal Server Error) ？
-            if self.retry_interval < 0:
-                raise EdinetFetchError(err_msg)
-            else:
-                # 指定時間待機して retry
+            elif e["handling"] == "retry":
                 logger.warning(err_msg)
                 logger.warning(f"Wait for retry ({self.retry_interval}sec) ...")
                 time.sleep(self.retry_interval) 
+                continue
 
     def save_docs_for_id(self, outdir, doc_id, *, doc_types=None, overwrite=False):
         """指定文書コードのデータを保存
@@ -220,14 +251,14 @@ class EdinetAPIFetcher:
 
         os.makedirs(outdir, exist_ok=True)
         for doc_type in doc_types:
-            r = self._fetch_doc_one(doc_id, doc_type)
-            if r is None:
-                continue
             ext = EdinetAPIFetcher._doc_ext(doc_type)
             outpath = Path(f"{outdir / doc_id}_{doc_type}.{ext}")
             if not overwrite and outpath.exists():
                 logger.info(f"File exists ({outpath}). Skip...")
             else:
+                r = self._fetch_doc_one(doc_id, doc_type)
+                if r is None:
+                    continue
                 with open(outpath, "wb") as f:
                     f.write(r.content)
 
@@ -307,7 +338,8 @@ if __name__ == "__main__":
     parser.add_argument("--overwrite", help="overwrite existing data", action="store_true", default=False)
     args = parser.parse_args()
     logging.basicConfig(
-        level = logging.INFO,
+        #level = logging.INFO,
+        level = logging.DEBUG,
         format = "[%(asctime)s][%(levelname)s] %(message)s",
     )
 
