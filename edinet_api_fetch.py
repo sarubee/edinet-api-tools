@@ -96,10 +96,8 @@ class EdinetAPIFetcher:
 
         return r
 
-    def _fetcher_err_handling_common(self, r):
+    def _fetcher_err_handling_common(self, r, ctype):
         # fetch 失敗時の共通処理
-        ctype = r.headers["Content-Type"]
-        ctype.strip()
         if ctype == "application/json;charset=utf-8":
             meta = r.json()["metadata"]
             status = int(meta["status"])
@@ -156,12 +154,12 @@ class EdinetAPIFetcher:
             logger.info(f"fetching document (doc_id: {doc_id}, type: {doc_type})...")
             r = EdinetAPIFetcher._fetch(url, params, headers)
             ctype = r.headers["Content-Type"]
-            ctype.strip()
+            ctype.replace(" ", "")
             if (doc_type == EdinetAPIFetcher.DOC_TYPE_PDF and ctype == "application/pdf") or (doc_type != EdinetAPIFetcher.DOC_TYPE_PDF and ctype == "application/octet-stream"):
                 # 取得成功
                 return r
             # エラー時の処理
-            e = self._fetcher_err_handling_common(r)
+            e = self._fetcher_err_handling_common(r, ctype)
             err_msg = err_msg_base + f": {e['message']}"
             if e["handling"] == "error":
                 raise EdinetFetchError(err_msg)
@@ -202,7 +200,7 @@ class EdinetAPIFetcher:
             logger.info(f"fetching document list (date: {day}, type: {target_type})...")
             r = EdinetAPIFetcher._fetch(EdinetAPIFetcher.URL_DOC_LIST, params, headers)
             ctype = r.headers["Content-Type"]
-            ctype.strip()
+            ctype.replace(" ", "")
             if ctype == "application/json;charset=utf-8":
                 j = r.json()
                 meta = j["metadata"]
@@ -212,7 +210,7 @@ class EdinetAPIFetcher:
                     # 取得成功
                     return j
             # エラー時の処理
-            e = self._fetcher_err_handling_common(r)
+            e = self._fetcher_err_handling_common(r, ctype)
             err_msg = err_msg_base + f": {e['message']}"
             if e["handling"] == "error":
                 raise EdinetFetchError(err_msg)
