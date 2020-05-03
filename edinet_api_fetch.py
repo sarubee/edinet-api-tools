@@ -153,8 +153,7 @@ class EdinetAPIFetcher:
         while True:
             logger.info(f"fetching document (doc_id: {doc_id}, type: {doc_type})...")
             r = EdinetAPIFetcher._fetch(url, params, headers)
-            ctype = r.headers["Content-Type"]
-            ctype.replace(" ", "")
+            ctype = r.headers["Content-Type"].replace(" ", "")
             if (doc_type == EdinetAPIFetcher.DOC_TYPE_PDF and ctype == "application/pdf") or (doc_type != EdinetAPIFetcher.DOC_TYPE_PDF and ctype == "application/octet-stream"):
                 # 取得成功
                 return r
@@ -199,8 +198,7 @@ class EdinetAPIFetcher:
         while True:
             logger.info(f"fetching document list (date: {day}, type: {target_type})...")
             r = EdinetAPIFetcher._fetch(EdinetAPIFetcher.URL_DOC_LIST, params, headers)
-            ctype = r.headers["Content-Type"]
-            ctype.replace(" ", "")
+            ctype = r.headers["Content-Type"].replace(" ", "")
             if ctype == "application/json;charset=utf-8":
                 j = r.json()
                 meta = j["metadata"]
