@@ -26,7 +26,8 @@ EDINET API からデータを取得します。
 #### ツールとして直接実行
 * 使い方
 ```
-$ edinet_api_fetch.py [-h] --from YYYY-MM-DD --to YYYY-MM-DD --dir DIR [--full] [--doc-code [NNN [NNN ...]]] [--need-sec-code] [--overwrite]
+$ python edinet_api_fetch.py [-h] --from YYYY-MM-DD --to YYYY-MM-DD --dir DIR [--full]
+                             [--doc-code [NNN [NNN ...]]] [--need-sec-code] [--overwrite]
 ```
 `--from` 指定日から `--to` 指定日までの期間のデータを EDINET API で取得し、`--dir` で指定したディレクトリに保存します。
 * オプション
