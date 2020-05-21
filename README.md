@@ -26,7 +26,7 @@ EDINET API からデータを取得します。
 #### ツールとして直接実行
 * 使い方
 ```
-$ edinet_api_fetch.py --from YYYY-MM-DD --to YYYY-MM-DD --dir DIR [--full] [--overwrite]
+$ edinet_api_fetch.py [-h] --from YYYY-MM-DD --to YYYY-MM-DD --dir DIR [--full] [--doc-code [NNN [NNN ...]]] [--need-sec-code] [--overwrite]
 ```
 `--from` 指定日から `--to` 指定日までの期間のデータを EDINET API で取得し、`--dir` で指定したディレクトリに保存します。
 * オプション
@@ -36,6 +36,9 @@ $ edinet_api_fetch.py --from YYYY-MM-DD --to YYYY-MM-DD --dir DIR [--full] [--ov
 --to YYYY-MM-DD    データ取得終了日 (必須) 
 --dir DIR          データ保存先ディレクトリ (必須) 
 --full             書類取得 API の全 type のデータを取得します（デフォルト: 書類取得 API の type=1 のデータのみ取得します）
+--doc-code [NNN [NNN ...]]
+                   取得する書類種別コードを指定します (デフォルト: 全ての書類種別コードの書類を取得する)
+--need-sec-code    証券コードの設定がない書類取得をスキップします（デフォルト: スキップしない）
 --overwrite        既存のデータを上書きします（デフォルト: 上書きしない)
 ```
 * 出力ツリー
