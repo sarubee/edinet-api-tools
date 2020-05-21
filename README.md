@@ -30,6 +30,10 @@ $ python edinet_api_fetch.py [-h] --from YYYY-MM-DD --to YYYY-MM-DD --dir DIR [-
                              [--doc-code [NNN [NNN ...]]] [--need-sec-code] [--overwrite]
 ```
 `--from` 指定日から `--to` 指定日までの期間のデータを EDINET API で取得し、`--dir` で指定したディレクトリに保存します。
+* 使用例
+```
+$ python edinet_api_fetch.py --from 2019-05-21 --to 2020-05-20 --dir edinet_sec_report_data --doc-code 120 --need-sec-code
+```
 * オプション
 ```
 -h, --help         ヘルプ表示
