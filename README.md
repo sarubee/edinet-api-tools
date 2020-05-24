@@ -63,7 +63,7 @@ $ python edinet_api_fetch.py --from 2019-05-21 --to 2020-05-20 --dir edinet_sec_
 ### データのパース
 有価証券報告書の基本的な財務データ取得用のクラスが用意してあります。
 
-* 使用例 ("edinet_sec_report_data" ディレクトリに保存したデータがある場合)
+* 使用例 ("edinet_sec_report_data" ディレクトリに上記 `edinet_api_fetch.py` で取得したデータがある場合)
 ```python
 import logging 
 from edinet_api_parser_sec_report import *
