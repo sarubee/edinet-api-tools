@@ -11,6 +11,7 @@ EDINET API については、[EDINET 操作ガイド](https://disclosure.edinet-
 Python の標準ライブラリに含まれない以下のライブラリ（およびそれらの依存ライブラリ）に依存しています。  
 * requests (2.18.4)
 * python-dateutil (2.6.1)
+* lxml (4.5.1)
 ---
 ## Author
 [github](https://github.com/sarubee "github"), [twitter](https://twitter.com/fire50net "twitter"), [blog](https://fire50.net/ "blog")
@@ -21,9 +22,9 @@ Apache License 2.0
 
 ---
 ## Description
-### edinet_api_fetch.py
+### データの取得
 EDINET API からデータを取得します。
-#### ツールとして直接実行
+#### edinet_api_fetch.py をツールとして直接実行
 * 使い方
 ```
 $ python edinet_api_fetch.py [-h] --from YYYY-MM-DD --to YYYY-MM-DD --dir DIR [--full]
@@ -59,12 +60,21 @@ $ python edinet_api_fetch.py --from 2019-05-21 --to 2020-05-20 --dir edinet_sec_
   :    :
 ```
 
-#### import して利用
+### データのパース
+有価証券報告書の基本的な財務データ取得用のクラスが用意してあります。
+
+* 使用例 ("edinet_sec_report_data" ディレクトリに保存したデータがある場合)
 ```python
-from edinet_api_fetch import EdinetAPIFetcher
-e = EdinetAPIFetcher()
-# 指定日の書類一覧を取得
-doc_list = e.fetch_doc_list_for_day("2020-05-01")
-# 特定の書類管理番号のデータを取得して保存
-e.save_docs_for_id("/path/to/outdir", "S100IITL")
+import logging 
+from edinet_api_parser_sec_report import *
+
+logging.basicConfig(
+    level = logging.INFO,
+    format = "[%(asctime)s][%(levelname)s] %(message)s",
+)
+
+data_parser = BasicFinancialDataParser()
+doc_parser = EdinetApiSecReportParser(data_parser)
+parser = EdinetApiParser(doc_parser)
+data = parser.parse("edinet_sec_report_data", "2019-05-20", "2020-05-19")
 ```
