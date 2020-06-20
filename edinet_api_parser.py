@@ -30,6 +30,7 @@ import copy
 import glob
 from multiprocessing import Pool
 import re
+import shutil
 
 import xbrl_edinet
 from xbrl_edinet import XbrlEdinetParseError
@@ -84,11 +85,19 @@ class DataParserAbs(metaclass=ABCMeta):
             return None
         return int(r)
 
+    @staticmethod
+    def get_float(df, ns_pre, tag, context_id=None):
+        r = DataParserAbs.get_text(df, ns_pre, tag, context_id)
+        if r is None:
+            return None
+        return float(r)
+
 # 書類種別 parser 基底クラス
 class EdinetApiDocParserAbs(metaclass=ABCMeta):
     @abstractmethod
-    def __init__(self, data_parser):
+    def __init__(self, data_parser, *, debug_config={}):
         self.data_parser = data_parser
+        self.debug_pdf_dir = Path(debug_config["pdf_dir"]) if "pdf_dir" in debug_config else None
 
     @abstractmethod
     # doc_list からデータを取得する対象を抽出
@@ -100,8 +109,16 @@ class EdinetApiDocParserAbs(metaclass=ABCMeta):
     def parse_id_dir(self, id_dir):
         pass
 
+    def save_pdf(self, id_dir):
+        # debug 指定があれば pdf を指定ディレクトリにコピーする
+        pdf_pattern = str(id_dir / "*_2.pdf")
+        pdf_path = glob.glob(pdf_pattern)
+        if len(pdf_path) > 0:
+            pdf_path = Path(pdf_path[0])
+            shutil.copyfile(pdf_path, self.debug_pdf_dir / pdf_path.name)
+
 class EdinetApiParser:
-    def __init__(self, doc_parser, cpu_count=None):
+    def __init__(self, doc_parser, *, cpu_count=None):
         self.doc_parser = doc_parser
         self.cpu_count = cpu_count
 
