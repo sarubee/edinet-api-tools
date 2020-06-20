@@ -47,6 +47,14 @@ class BasicFinancialDataParser(DataParserAbs):
             r = DataParserAbs.get_int(df, "jppfs_cor", id_, "CurrentYearDuration_NonConsolidatedMember")
         return r
 
+    @staticmethod
+    def get_jpcrp_current_ins_float(df, id_):
+        # 連結の場合もある？
+        r = DataParserAbs.get_float(df, "jpcrp_cor", id_, "CurrentYearInstant")
+        if r is None:
+            r = DataParserAbs.get_float(df, "jpcrp_cor", id_, "CurrentYearInstant_NonConsolidatedMember")
+        return r
+
     def parse(self, df):
         d = {}
         # BS 関連
@@ -65,12 +73,24 @@ class BasicFinancialDataParser(DataParserAbs):
         d["ordinary_income"] = BasicFinancialDataParser.get_jppfs_current_dur_int(df, "OrdinaryIncome") # 経常利益
         d["profit_loss"] = BasicFinancialDataParser.get_jppfs_current_dur_int(df, "ProfitLoss") # 純利益
 
+        # CF 関連
+        d["operating_cashflow"] = BasicFinancialDataParser.get_jppfs_current_dur_int(df, "NetCashProvidedByUsedInOperatingActivities") # 営業キャッシュフロー
+        d["investment_cashflow"] = BasicFinancialDataParser.get_jppfs_current_dur_int(df, "NetCashProvidedByUsedInInvestmentActivities") # 投資キャッシュフロー
+        d["financing_cashflow"] = BasicFinancialDataParser.get_jppfs_current_dur_int(df, "NetCashProvidedByUsedInFinancingActivities") # 財務キャッシュフロー
+        # フリーキャッシュフロー
+        if d["operating_cashflow"] is not None and d["investment_cashflow"] is not None:
+            d["free_cashflow"] = d["operating_cashflow"] + d["investment_cashflow"]
+        else:
+            d["free_cashflow"] = None
+
         return d
 
 # 有価証券報告書 parser
 class EdinetApiSecReportParser(EdinetApiDocParserAbs):
-    def __init__(self, data_parser):
-        super().__init__(data_parser)
+    def __init__(self, data_parser, *, debug_config={}):
+        super().__init__(data_parser, debug_config=debug_config)
+        # 指定があったら debug 用の csv を出力する
+        self.debug_csv_dir = Path(debug_config["csv_dir"]) if "csv_dir" in debug_config else None
 
     # doc_list からデータを取得する対象を抽出
     def get_targets_from_doclist(self, doc_list):
@@ -84,8 +104,10 @@ class EdinetApiSecReportParser(EdinetApiDocParserAbs):
                 logger.warning(f"Skip document (ordinanceCode:{d['ordinanceCode']}, formCode:{d['formCode']}): {d} ...")
                 continue
             # doc_list から使いそうな項目のみ選択
-            keys = {"docID" : "doc_id", "secCode" : "sec_code", "filerName" : "name", "periodStart" : "start_date", "periodEnd" : "end_date", "submitDateTime" : "submit_datetime"}
-            target_info_list.append({v : d[k] for k, v in keys.items()})
+            keys = {"docID" : "doc_id", "secCode" : "sec_code", "filerName" : "name", "periodStart" : "start_date", "periodEnd" : "end_date"}
+            info = {v : d[k] for k, v in keys.items()}
+            info["submit_date"] = str(datetime.fromisoformat(d["submitDateTime"]).date())
+            target_info_list.append(info)
         return target_info_list
 
     # 一つの EDINET ID directory に対する parse
@@ -94,13 +116,20 @@ class EdinetApiSecReportParser(EdinetApiDocParserAbs):
         zip_path = glob.glob(zip_pattern)
         if len(zip_path) < 1:
             raise EdinetApiParseError(f"No such file ({zip_pattern})")
-        zip_path = zip_path[0]
-        return self.parse_zip(zip_path)
+        zip_path = Path(zip_path[0])
+        r = self.parse_zip(zip_path)
+
+        if self.debug_pdf_dir is not None:
+            self.save_pdf(id_dir)
+
+        return r
 
     def parse_zip(self, zip_path):
         logger.info(f"parse {zip_path} ...")
         # データを取得してパース
         df = xbrl_edinet.parse_zip(zip_path)
+        if df is not None and self.debug_csv_dir is not None:
+            df.to_csv(self.debug_csv_dir / f"{zip_path.parent.name}.csv", index=False)
         return self.data_parser.parse(df)
 
 # テストコード
