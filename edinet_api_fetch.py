@@ -31,6 +31,7 @@ import logging
 logger = logging.getLogger(__name__)
 import json
 import os
+import shutil
 
 class EdinetFetchError(RuntimeError):
     pass
@@ -223,7 +224,7 @@ class EdinetAPIFetcher:
                 time.sleep(self.retry_interval)
                 continue
 
-    def save_docs_for_id(self, outdir, doc_id, *, doc_types=None, overwrite=False):
+    def save_docs_for_id(self, outdir, doc_id, *, doc_types=None):
         """指定文書コードのデータを保存
 
         Parameters
@@ -234,31 +235,28 @@ class EdinetAPIFetcher:
             出力ディレクトリパス
         doc_types : list
             取得する文書 type
-        overwrite : bool
-            ファイルが存在する場合に上書きするか
 
         Returns
         -------
         """
         outdir = Path(outdir)
+        shutil.rmtree(outdir, ignore_errors=True)
+        os.makedirs(outdir)
+
         if doc_types is None:
             # デフォルトは main データだけ
             doc_types = [EdinetAPIFetcher.DOC_TYPE_MAIN]
 
-        os.makedirs(outdir, exist_ok=True)
         for doc_type in doc_types:
             ext = EdinetAPIFetcher._doc_ext(doc_type)
             outpath = Path(f"{outdir / doc_id}_{doc_type}.{ext}")
-            if not overwrite and outpath.exists():
-                logger.info(f"File exists ({outpath}). Skip...")
-            else:
-                r = self._fetch_doc_one(doc_id, doc_type)
-                if r is None:
-                    continue
-                with open(outpath, "wb") as f:
-                    f.write(r.content)
+            r = self._fetch_doc_one(doc_id, doc_type)
+            if r is None:
+                continue
+            with open(outpath, "wb") as f:
+                f.write(r.content)
 
-    def save_docs_for_day(self, outdir, day, *, doc_types=None, doc_codes=None, need_sec_code=False, overwrite=False):
+    def save_docs_for_day(self, outdir, day, *, doc_types=None, doc_codes=None, need_sec_code=False):
         """指定日のデータを保存
 
         Parameters
@@ -273,25 +271,21 @@ class EdinetAPIFetcher:
             取得する書類種別コード
         need_sec_code : bool
             証券コードがない書類をスキップするか
-        overwrite : bool
-            ファイルが存在する場合に上書きするか
 
         Returns
         -------
         """
         outdir = Path(outdir)
+        shutil.rmtree(outdir, ignore_errors=True)
+
         doc_list_path = outdir / "doc_list.json"
-        if not overwrite and doc_list_path.exists():
-            logger.info(f"File exists ({doc_list_path}). Loading existing file....")
-            with open(doc_list_path, "r") as f:
-                j = json.load(f)
-        else:
-            j = api.fetch_doc_list_for_day(day)
-            if j is None:
-                return
-            os.makedirs(outdir, exist_ok=True)
-            with open(doc_list_path, "w") as f:
-                json.dump(j, f, indent=2, ensure_ascii=False)
+        j = api.fetch_doc_list_for_day(day)
+        if j is None:
+            return
+        os.makedirs(outdir)
+        with open(doc_list_path, "w") as f:
+            json.dump(j, f, indent=2, ensure_ascii=False)
+
         for d in j["results"]:
             if doc_codes is not None and not d["docTypeCode"] in doc_codes:
                 continue
@@ -299,9 +293,9 @@ class EdinetAPIFetcher:
                 continue
             doc_id = d["docID"]
             outdir_id = outdir / doc_id
-            self.save_docs_for_id(outdir_id, doc_id, doc_types=doc_types, overwrite=overwrite)
+            self.save_docs_for_id(outdir_id, doc_id, doc_types=doc_types)
 
-    def save_docs_for_period(self, outdir, start_day, end_day, *, doc_types=None, doc_codes=None, need_sec_code=False, overwrite=False):
+    def save_docs_for_period(self, outdir, start_day, end_day, *, doc_types=None, doc_codes=None, need_sec_code=False):
         """指定期間のデータを保存
 
         Parameters
@@ -318,8 +312,6 @@ class EdinetAPIFetcher:
             取得する書類種別コード
         need_sec_code : bool
             証券コードがない書類をスキップするか
-        overwrite : bool
-            ファイルが存在する場合に上書きするか
 
         Returns
         -------
@@ -332,7 +324,7 @@ class EdinetAPIFetcher:
         day = start_day
         while day <= end_day:
             daydir = Path(outdir) / str(day)
-            self.save_docs_for_day(daydir, day, doc_types=doc_types, doc_codes=doc_codes, need_sec_code=need_sec_code, overwrite=overwrite)
+            self.save_docs_for_day(daydir, day, doc_types=doc_types, doc_codes=doc_codes, need_sec_code=need_sec_code)
             day += relativedelta(days=1)
 
 
@@ -345,7 +337,6 @@ if __name__ == "__main__":
     parser.add_argument("--full", help="fetch full data", action="store_true", default=False)
     parser.add_argument("--doc-code", metavar="NNN", help="fetch documents with specific document code", nargs="*", dest="doc_codes")
     parser.add_argument("--need-sec-code", help="skip documents without sec code", action="store_true", default=False)
-    parser.add_argument("--overwrite", help="overwrite existing data", action="store_true", default=False)
     args = parser.parse_args()
     logging.basicConfig(
         level = logging.INFO,
@@ -359,4 +350,4 @@ if __name__ == "__main__":
     else:
         doc_types = [EdinetAPIFetcher.DOC_TYPE_MAIN]
     api = EdinetAPIFetcher(retry_interval=60)
-    api.save_docs_for_period(args.dir, start_day, end_day, doc_types=doc_types, doc_codes=args.doc_codes, need_sec_code=args.need_sec_code, overwrite=args.overwrite)
+    api.save_docs_for_period(args.dir, start_day, end_day, doc_types=doc_types, doc_codes=args.doc_codes, need_sec_code=args.need_sec_code)
