@@ -20,6 +20,7 @@ edinet_api_parser_sec_report.py
 """
 
 import pandas as pd
+import datetime
 import logging
 logger = logging.getLogger(__name__)
 
@@ -106,7 +107,7 @@ class EdinetApiSecReportParser(EdinetApiDocParserAbs):
             # doc_list から使いそうな項目のみ選択
             keys = {"docID" : "doc_id", "secCode" : "sec_code", "filerName" : "name", "periodStart" : "start_date", "periodEnd" : "end_date"}
             info = {v : d[k] for k, v in keys.items()}
-            info["submit_date"] = str(datetime.fromisoformat(d["submitDateTime"]).date())
+            info["submit_date"] = str(datetime.datetime.fromisoformat(d["submitDateTime"]).date())
             target_info_list.append(info)
         return target_info_list
 

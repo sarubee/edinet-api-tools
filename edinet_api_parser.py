@@ -20,7 +20,7 @@ edinet_api_parser.py
 """
 
 from pathlib import Path
-from datetime import date, datetime
+from datetime import date
 from dateutil.relativedelta import relativedelta
 import logging
 logger = logging.getLogger(__name__)
