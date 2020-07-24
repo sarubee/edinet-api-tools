@@ -78,4 +78,28 @@ data_parser = BasicFinancialDataParser()
 doc_parser = EdinetApiSecReportParser(data_parser)
 parser = EdinetApiParser(doc_parser)
 data = parser.parse("edinet_sec_report_data", "2019-05-20", "2020-05-19")
+print(data)
+```
+
+### データの更新チェック
+* 使用例（一日分の大量保有報告書をチェックする場合）
+```python
+from edinet_api_check import *
+
+logging.basicConfig(
+    level = logging.WARN,
+    format = "[%(asctime)s][%(levelname)s] %(message)s",
+)
+
+# history_file を指定すると前回からの差分をチェックできます
+#history_file = "check_history.json"
+history_file = None
+
+# 特定の銘柄のみチェック対象にする場合はコードを指定します
+#sec_codes = ["3001", "6396", "8806", "8841", "9279"]
+sec_codes = None
+
+checker = EdinetApiHoldingsChecker(history_file=history_file)
+r = checker.check(sec_codes=sec_codes, days=1)
+print(r)
 ```
