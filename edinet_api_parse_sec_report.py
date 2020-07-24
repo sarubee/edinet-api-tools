@@ -15,7 +15,7 @@
 #   limitations under the License.
 
 """
-edinet_api_parser_sec_report.py
+edinet_api_parse_sec_report.py
 - script to parse securities reports fetched via EDINET API
 """
 
