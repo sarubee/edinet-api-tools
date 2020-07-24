@@ -131,7 +131,7 @@ class EdinetAPIFetcher:
             msg = f"Unexpected content type ({ctype})!!"
             return {"handling" : "error", "message" : msg}
 
-    def _fetch_doc_one(self, doc_id, doc_type):
+    def fetch_doc_one(self, doc_id, doc_type):
         """文書コード、type を指定して取得する関数
 
         Parameters
@@ -250,7 +250,7 @@ class EdinetAPIFetcher:
         for doc_type in doc_types:
             ext = EdinetAPIFetcher._doc_ext(doc_type)
             outpath = Path(f"{outdir / doc_id}_{doc_type}.{ext}")
-            r = self._fetch_doc_one(doc_id, doc_type)
+            r = self.fetch_doc_one(doc_id, doc_type)
             if r is None:
                 continue
             with open(outpath, "wb") as f:
