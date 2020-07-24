@@ -15,7 +15,7 @@
 #   limitations under the License.
 
 """
-edinet_api_parser.py
+edinet_api_parse.py
 - script to parse data fetched via EDINET API
 """
 
