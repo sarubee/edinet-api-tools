@@ -67,7 +67,7 @@ $ python edinet_api_fetch.py --from 2019-05-21 --to 2020-05-20 --dir edinet_sec_
 * 使用例 ("edinet_sec_report_data" ディレクトリに上記 `edinet_api_fetch.py` で取得したデータがある場合)
 ```python
 import logging 
-from edinet_api_parser_sec_report import *
+from edinet_api_parse_sec_report import *
 
 logging.basicConfig(
     level = logging.INFO,
