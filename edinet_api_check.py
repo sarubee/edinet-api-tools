@@ -59,6 +59,7 @@ class EdinetApiCheckerAbs(metaclass=ABCMeta):
         while date <= end_date:
             j = self.fetcher.fetch_doc_list_for_day(date)
             if j is None:
+                # 時間が早いと本日分の提出書類一覧取得に失敗することがある
                 continue
 
             count = j["metadata"]["resultset"]["count"]
