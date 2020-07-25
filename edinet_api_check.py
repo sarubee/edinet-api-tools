@@ -59,7 +59,7 @@ class EdinetApiCheckerAbs(metaclass=ABCMeta):
         while date <= end_date:
             j = self.fetcher.fetch_doc_list_for_day(date)
             if j is None:
-                raise EdinetCheckError(f"failed to get a document list ({date})")
+                continue
 
             count = j["metadata"]["resultset"]["count"]
 
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     parser.add_argument("--days", help="days to check", type=int, default=1)
     args = parser.parse_args()
     logging.basicConfig(
-        level = logging.INFO,
+        level = logging.WARN,
         format = "[%(asctime)s][%(levelname)s] %(message)s",
     )
 
