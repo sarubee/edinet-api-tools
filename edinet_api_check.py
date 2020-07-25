@@ -41,11 +41,11 @@ class EdinetApiCheckError(RuntimeError):
 class EdinetApiCheckerAbs(metaclass=ABCMeta):
     def __init__(self, *, retry_interval=-1, history_file=None):
         self.fetcher = EdinetAPIFetcher(retry_interval)
-        self.history_file = history_file 
+        self.history_file = None if history_file is None else Path(history_file)
 
     def check(self, sec_codes=None, days=1):
         end_datetime = datetime.datetime.now()
-        start_datetime = end_datetime - datetime.timedelta(days=args.days)
+        start_datetime = end_datetime - datetime.timedelta(days=days)
         end_date = end_datetime.date()
         date = start_datetime.date()
 
@@ -85,7 +85,7 @@ class EdinetApiCheckerAbs(metaclass=ABCMeta):
                     submit_datetime = datetime.datetime.fromisoformat(d["submitDateTime"])
                     if submit_datetime < start_datetime:
                         continue
-                r = checker._check_one(d, sec_codes)
+                r = self._check_one(d, sec_codes)
                 if r is not None:
                     result.append(r)
             # 処理が終わったら update
