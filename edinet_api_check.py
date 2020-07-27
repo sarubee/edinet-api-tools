@@ -69,8 +69,8 @@ class EdinetApiCheckerAbs(metaclass=ABCMeta):
                 skip_count = count_h[date_key]
                 if count <= skip_count:
                     logger.info(f"No updates in {date}")
-                date += datetime.timedelta(days=1)
-                continue
+                    date += datetime.timedelta(days=1)
+                    continue
             else:
                 skip_count = 0
 
