@@ -25,7 +25,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import xbrl_edinet
-from edinet_api_parser import *
+from edinet_api_parse import *
 
 # 有価証券報告書財務データの basic な parser
 class BasicFinancialDataParser(DataParserAbs):
