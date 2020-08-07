@@ -240,8 +240,7 @@ class EdinetAPIFetcher:
         -------
         """
         outdir = Path(outdir)
-        shutil.rmtree(outdir, ignore_errors=True)
-        os.makedirs(outdir)
+        os.makedirs(outdir, exist_ok=True)
 
         if doc_types is None:
             # デフォルトは main データだけ
@@ -276,13 +275,12 @@ class EdinetAPIFetcher:
         -------
         """
         outdir = Path(outdir)
-        shutil.rmtree(outdir, ignore_errors=True)
 
         doc_list_path = outdir / "doc_list.json"
         j = api.fetch_doc_list_for_day(day)
         if j is None:
             return
-        os.makedirs(outdir)
+        os.makedirs(outdir, exist_ok=True)
         with open(doc_list_path, "w") as f:
             json.dump(j, f, indent=2, ensure_ascii=False)
 
