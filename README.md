@@ -1,7 +1,7 @@
 # edinet-api-tools
 EDINET API 活用のための Python ツールのレポジトリです（非公式）。
 
-EDINET API については、[EDINET 操作ガイド](https://disclosure.edinet-fsa.go.jp/EKW0EZ0015.html) の "EDINET API関連資料" に仕様等の説明があります。
+EDINET API の仕様などは、[EDINET の公式サイト](https://disclosure2.edinet-fsa.go.jp) をご参照ください。
 
 ---
 ## Requirement
