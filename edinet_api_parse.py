@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#   Copyright 2020 Sarubee
+#   Copyright 2023 Sarubee
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ from xbrl_edinet import XbrlEdinetParseError
 class EdinetApiParseError(RuntimeError):
     pass
 # 想定外のエラー
-class EdinetApiParseUnxepectedError(RuntimeError):
+class EdinetApiParseUnexpectedError(RuntimeError):
     pass
 
 # データ parser 基底クラス
@@ -54,7 +54,7 @@ class DataParserAbs(metaclass=ABCMeta):
         pass
 
     @staticmethod
-    def get_row(df, ns_pre, tag, context_id=None):
+    def get_row(df, ns_pre, tag, context_id=None, multi=False):
         # 行を抜き出す
         if ns_pre is not None:
             # ns_pre は正規表現として match する
@@ -64,19 +64,39 @@ class DataParserAbs(metaclass=ABCMeta):
             cond += f" & (context_id == '{context_id}')"
         r = df.query(cond)
 
+        if multi:
+            return r
         if len(r) < 1:
             return None
-        elif len(r) > 1:
-            EdinetApiParseUnexpectedError(f"Multiple rows exist! (condition: {cond})")
-        return r.iloc[0]
+        elif len(r) == 1:
+            return r.iloc[0]
+        else:
+            raise EdinetApiParseUnexpectedError(f"Multiple rows exist! (condition: {cond})")
 
     @staticmethod
-    def get_text(df, ns_pre, tag, context_id=None):
+    def get_text(df, ns_pre, tag, context_id=None, remove_tag=False):
         r = DataParserAbs.get_row(df, ns_pre, tag, context_id)
         if r is None or r["text"] is None:
             return None
         s = r["text"].replace("\n", "").replace("\u3000", "  ").replace("\xa0", " ")
+        if remove_tag:
+            s = re.sub("</?span[^>]*?>", "", s)
+            s = re.sub("</?p[^>]*?>", "", s)
         return s
+
+    @staticmethod
+    def get_text_multi(df, ns_pre, tag, context_id=None, remove_tag=False):
+        r = DataParserAbs.get_row(df, ns_pre, tag, context_id, True)
+        texts = []
+        for t in r["text"]:
+            if t is None:
+                texts.append(None)
+                continue
+            tt = t.replace("\n", "").replace("\u3000", "  ").replace("\xa0", " ")
+            tt = re.sub("</?span[^>]*?>", "", tt)
+            tt = re.sub("</?p[^>]*?>", "", tt)
+            texts.append(tt)
+        return texts
 
     @staticmethod
     def get_int(df, ns_pre, tag, context_id=None):

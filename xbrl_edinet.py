@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#   Copyright 2020 Sarubee
+#   Copyright 2023 Sarubee
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -137,4 +137,4 @@ if __name__ == "__main__":
 
     # 一つの zip ファイルの  parse テスト
     df = parse_zip("xxx.zip")
-    df.to_csv("xxx.csv", index=False)
+    df.to_csv("xxx.csv", index=False, encoding="utf_8_sig")
