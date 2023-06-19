@@ -34,7 +34,7 @@ class EdinetApiCheckError(RuntimeError):
 
 class EdinetApiCheckerAbs(metaclass=ABCMeta):
     def __init__(self, *, retry_interval=-1, history_file=None):
-        self.fetcher = EdinetAPIFetcher(retry_interval)
+        self.fetcher = EdinetAPIFetcher(retry_interval=retry_interval)
         self.history_file = None if history_file is None else Path(history_file)
 
     def check(self, sec_codes=None, days=1):
@@ -51,9 +51,10 @@ class EdinetApiCheckerAbs(metaclass=ABCMeta):
 
         result = [] 
         while date <= end_date:
-            j = self.fetcher.fetch_doc_list_for_day(date)
+            j = self.fetcher.fetch_daily_doc_list(date)
             if j is None:
                 # 時間が早いと本日分の提出書類一覧取得に失敗することがある
+                date += datetime.timedelta(days=1)
                 continue
 
             count = j["metadata"]["resultset"]["count"]
@@ -150,6 +151,6 @@ if __name__ == "__main__":
         level = logging.INFO,
         format = "[%(asctime)s][%(levelname)s] %(message)s",
     )
-    checker = EdinetApiHoldingsChecker(history_file="test.j")
+    checker = EdinetApiHoldingsChecker(retry_interval=10, history_file="test.j")
     r = checker.check(sec_codes=None, days=1)
     pprint.pprint(r, sort_dicts=False)

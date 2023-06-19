@@ -156,7 +156,7 @@ class EdinetApiParser:
         """データをパースして pandas.DataFrame にして返す関数
         """
 
-        # data_dir は EdinetAPIFetcher.save_docs_for_period() の保存先ディレクトリ
+        # data_dir は EdinetAPIFetcher.save_period() の保存先ディレクトリ
         data_dir = Path(data_dir)
 
         if isinstance(start_day, str):
