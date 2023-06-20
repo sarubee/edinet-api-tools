@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 import json
 import os
 import shutil
+import copy
 
 class EdinetFetchError(RuntimeError):
     pass
@@ -43,9 +44,10 @@ class EdinetAPIFetcher:
     URL_DOC_LIST = URL_API + "documents.json"
     URL_DOC = URL_API + "documents/"
     # 文書 type
+    # TODO: CSV (type==5) は未対応!! まだ取得できないようなので
     DOC_TYPE_MAIN = 1
     DOC_TYPE_PDF = 2
-    DOC_TYPE_ADDITIONAL = 3
+    DOC_TYPE_ATTACH = 3
     DOC_TYPE_ENG = 4
     DOC_TYPE_LIST_FULL = [1, 2, 3, 4]
 
@@ -70,7 +72,7 @@ class EdinetAPIFetcher:
         """
         if doc_type == EdinetAPIFetcher.DOC_TYPE_PDF:
             return "pdf"
-        else: # EdinetAPIFetcher.DOC_TYPE_MAIN, EdinetAPIFetcher.DOC_TYPE_ADDITIONAL, EdinetAPIFetcher.DOC_TYPE_ENG
+        else: # EdinetAPIFetcher.DOC_TYPE_MAIN, EdinetAPIFetcher.DOC_TYPE_ATTACH, EdinetAPIFetcher.DOC_TYPE_ENG
             return "zip"
 
     def _fetch(self, url, params, headers):
@@ -267,7 +269,7 @@ class EdinetAPIFetcher:
             with open(outpath, "wb") as f:
                 f.write(r.content)
 
-    def save_daily(self, outdir, day, *, doc_types=None, doc_codes=None, need_sec_code=False, skip_if_list_exists=False, list_name="doc_list_v2.json"):
+    def save_daily(self, outdir, day, *, doc_types=None, doc_codes=None, need_sec_code=False, skip_if_list_exists=False, list_name="list.json"):
         """指定日のデータを保存
 
         Parameters
@@ -290,6 +292,16 @@ class EdinetAPIFetcher:
         Returns
         -------
         """
+        def valid_doc_types(doc_types, d):
+            # Flag 的に存在しない文書 type はスキップ
+            result = copy.deepcopy(doc_types)
+            # NOTE: xbrlFlag:"0" でも DOC_TYPE_MAIN は一応取得しておく。xbrl 以外もあるので
+            flag_dict = {"pdfFlag": EdinetAPIFetcher.DOC_TYPE_PDF, "attachDocFlag": EdinetAPIFetcher.DOC_TYPE_ATTACH, "englishDocFlag": EdinetAPIFetcher.DOC_TYPE_ENG}
+            for k, v in flag_dict.items(): 
+                if v in result and d[k] == "0":
+                    result.remove(v)
+            return result
+
         outdir = Path(outdir)
         list_path = outdir / list_name
         if skip_if_list_exists and list_path.exists():
@@ -311,7 +323,7 @@ class EdinetAPIFetcher:
                 continue
             doc_id = d["docID"]
             outdir_id = outdir / doc_id
-            self.save_docs_for_id(outdir_id, doc_id, doc_types=doc_types)
+            self.save_docs_for_id(outdir_id, doc_id, doc_types=valid_doc_types(doc_types, d))
 
         # 全部取得したら最後に list を出力
         # 最後に出力することでこれがあるかどうかで一通り全部取得できたチェックにも使えるように
