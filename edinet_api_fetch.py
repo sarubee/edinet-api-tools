@@ -92,8 +92,8 @@ class EdinetAPIFetcher:
         Response
         """
 
-        # データ取得
-        r = requests.get(url, params=params, headers=headers)
+        # データ取得 (適当に timeout 時間を設定しておく)
+        r = requests.get(url, params=params, headers=headers, timeout=60)
         # 終わったら負荷をかけないように一定時間休む
         time.sleep(self.fetch_interval)
         # status チェック (あまり意味ないかも)
