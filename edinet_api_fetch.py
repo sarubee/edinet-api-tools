@@ -254,6 +254,10 @@ class EdinetAPIFetcher:
         -------
         """
         outdir = Path(outdir)
+        if outdir.exists():
+            # outdir が存在してたら警告を出して消す
+            logger.warning(f"Removing existing output directory ({outdir}) ...")
+            shutil.rmtree(outdir)
         os.makedirs(outdir)
 
         if doc_types is None:
