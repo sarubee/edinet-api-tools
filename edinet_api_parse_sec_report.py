@@ -20,7 +20,6 @@ edinet_api_parse_sec_report.py
 """
 
 import pandas as pd
-import numpy as np
 import datetime
 import logging
 logger = logging.getLogger(__name__)
