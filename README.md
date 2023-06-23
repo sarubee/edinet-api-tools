@@ -10,7 +10,7 @@ EDINET API の仕様などは、[EDINET の公式サイト](https://disclosure2.
 
 Python の標準ライブラリに含まれない以下のライブラリ（およびそれらの依存ライブラリ）に依存しています。  
 * pandas (1.1.2)
-* requests (2.2)
+* requests (2.22.0)
 * python-dateutil (2.7.3)
 * lxml (4.5.2)
 ---
