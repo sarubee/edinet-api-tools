@@ -22,7 +22,7 @@ edinet_api_fetch.py
 
 import argparse
 import requests
-from requests.exceptions import SSLError
+from requests.exceptions import SSLError, ConnectionError, ChunkedEncodingError, ReadTimeout
 import time
 from urllib.parse import urljoin
 from pathlib import Path
@@ -164,10 +164,10 @@ class EdinetAPIFetcher:
             logger.info(f"fetching document (doc_id: {doc_id}, type: {doc_type})...")
             try:
                 r = self._fetch(url, params, headers)
-            except SSLError as e:
+            except (SSLError, ConnectionError, ChunkedEncodingError, ReadTimeout) as e:
+                # たまにこれらのエラーが発生するのでその場合はリトライ
                 if self.retry_interval < 0:
                     raise
-                # たまに SSLError が発生するのでその場合はリトライ
                 self._prepare_for_retry(str(e))
                 continue
             ctype = r.headers["Content-Type"].replace(" ", "")
